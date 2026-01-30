@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Webhook Events</title>
+
+    <style>
+        body {
+            font-family: Inter, system-ui, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #58a6ff;
+            letter-spacing: 0.5px;
+        }
+
+        .timeline {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        .event {
+            background: #161b22;
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 16px;
+            border-left: 4px solid transparent;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+        }
+
+        .event.push { border-color: #3fb950; }
+        .event.pr { border-color: #58a6ff; }
+        .event.merge { border-color: #d2a8ff; }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
+        .badge.push { background: rgba(63,185,80,0.15); color: #3fb950; }
+        .badge.pr { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        .badge.merge { background: rgba(210,168,255,0.15); color: #d2a8ff; }
+
+        .message {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 6px;
+        }
+
+        .author {
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .branch {
+            color: #58a6ff;
+            font-weight: 500;
+        }
+
+        .time {
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .empty {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>GitHub Activity</h1>
+
+<div class="timeline"></div>
+
+<script>
+    async function loadEvents() {
+        const res = await fetch('/webhook/events');
+        const events = await res.json();
+
+        const container = document.querySelector('.timeline');
+        container.innerHTML = '';
+
+        if (!events.length) {
+            container.innerHTML = '<p class="empty">No events yet</p>';
+            return;
+        }
+
+        events.forEach(e => {
+            let message = '';
+            let cls = '';
+
+            // EXACT TEXT FORMAT AS REQUIRED
+            if (e.action === 'PUSH') {
+                cls = 'push';
+                message = `<span class="author">${e.author}</span> pushed to 
+                           <span class="branch">${e.to_branch}</span> 
+                           on ${e.timestamp}`;
+            }
+
+            if (e.action === 'PULL_REQUEST') {
+                cls = 'pr';
+                message = `<span class="author">${e.author}</span> submitted a pull request from 
+                           <span class="branch">${e.from_branch}</span> to 
+                           <span class="branch">${e.to_branch}</span> 
+                           on ${e.timestamp}`;
+            }
+
+            if (e.action === 'MERGE') {
+                cls = 'merge';
+                message = `<span class="author">${e.author}</span> merged branch 
+                           <span class="branch">${e.from_branch}</span> to 
+                           <span class="branch">${e.to_branch}</span> 
+                           on ${e.timestamp}`;
+            }
+
+            container.innerHTML += `
+                <div class="event ${cls}">
+                    <div class="badge ${cls}">${e.action}</div>
+                    <div class="message">${message}</div>
+                    <div class="time">${e.request_id}</div>
+                </div>
+            `;
+        });
+    }
+
+    loadEvents();
+    setInterval(loadEvents, 15000); // refresh every 15 seconds
+</script>
+
+</body>
+</html>
